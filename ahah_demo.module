@@ -4,12 +4,14 @@
 function ahah_demo_menu() {
   $items = array();
 
-  $items = array(
-    'title' = 'AHAH Select Dropdowns Demo',
-    'page callback' = 'drupal_get_form',
-    'page arguments' = array('ahah_demo_form'),
-    'access arguments' = array('access content'),
+  $items['ahah-demo'] = array(
+    'title' => 'AHAH Select Dropdowns Demo',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('ahah_demo_form'),
+    'access arguments' => array('access content'),
   );
+
+  return $items;
 }
 
 /** Form defintion
@@ -17,5 +19,293 @@ function ahah_demo_menu() {
 function ahah_demo_form($form_state) {
   $form = array();
 
+  //Register the form with ahah_helper
+  ahah_helper_register($form, $form_state);
+
+  // Determine the default value of the 'department' select. When nothing is stored
+  // in $form_state['storage'] yet, the form hasn't been submitted yet,
+  // thus it's the first time the form is being displayed. Then, we set the
+  // default to 'none'.
+  if (!isset($form_state['storage']['search_content']['department'])) {
+    $department_value = 'none';
+  }
+  else {
+    $department_value =  $form_state['storage']['search_content']['department'];
+  }
+
+  $form['search_content'] = array(
+    '#tree' => TRUE,
+    '#type' => 'fieldset',
+    '#prefix' => '<div id="search-content-wrapper">',
+    '#suffix' => '</div>',
+  );
+  $form['search_content']['department'] = array(
+    '#type' => 'select',
+    '#prefix' => '<p class="lightbox_form"><span>Select Department</span><br />',
+    '#suffix' => '</p>',
+    '#default_value' => $form_state['storage']['category']['select_cat'],
+    '#options' => ahah_demo_get_departments(),  // Get some options for this select from the DB
+    '#ahah' => array(
+      'path' => ahah_helper_path(array('search_content')),
+      'wrapper' => 'search-content-wrapper',
+      'method' => 'replace',
+    ),
+    '#default_value' => $department_value,
+  );
+  $form['search_content']['update_department'] = array(
+    '#type'  => 'submit',
+    '#value' => t('Update department'),
+    // Note that we can simply use the generic submit callback provided by the
+    // ahah_helper module here!
+    // All it does, is set $form_state['rebuild'] = TRUE.
+    '#submit' => array('ahah_helper_generic_submit'),
+    // We set the 'no-js' class, which means this submit button will be hidden
+    // automatically by Drupal if JS is enabled.
+    '#attributes' => array('class' => 'no-js'),
+  );
+
+
+  // Here we react to $form_state, adding content to the form, depending on the
+  // submitted value of department, above.
+  if($department_value != 'none') {
+    $form['search_content']['category_content'] = array(
+      '#type' => 'fieldset',
+      '#tree' => TRUE,
+      '#prefix' => '<div id="category-content-wrapper">',
+      '#suffix' => '</div>',
+    );
+    $form['search_content']['category_content']['category'] = array(
+      '#type' => 'select',
+      '#prefix' => '<p class="lightbox_form"><span>Select Category</span><br />',
+      '#suffix' => '</p>',
+      '#options' => ahah_demo_get_categories($department_value),
+      '#ahah' => array(
+        'path' => ahah_helper_path(array('search_content', 'category_content')),
+        'wrapper' => 'category-content-wrapper',
+        'method' => 'replace',
+      ),
+      '#default_value' => $form_state['storage']['search_content']['category_content']['category'],
+    );
+
+    //Check to see if the department value has changed.
+    //If it has, don't display the model.
+    if($form_state['storage']['dept_cache'] != $department_value) {
+      ahah_demo_clear_model($form_state);
+    }
+    $form_state['storage']['dept_cache'] = $department_value;
+  } else {
+    ahah_demo_clear_model($form_state);
+  }
+
+  if(isset($form_state['storage']['search_content']['category_content']['category'])) {
+   if($form_state['storage']['search_content']['category_content']['category'] != 'none') {
+      $form['search_content']['category_content']['model'] = array(
+        '#type' => 'select',
+        '#prefix' => '<p class="lightbox_form"><span>Select Class</span><br />',
+        '#suffix' => '</p>',
+        '#options' => ahah_demo_get_models($form_state['storage']['search_content']['category_content']['category']),
+        '#default_value' => "default",
+      );
+    }
+  }
+
+  $form['save'] = array(
+    '#type'  => 'submit',
+    '#value' => t('See available equipment'),
+  );
+
   return $form;
+} //end ahah_form definiton
+
+/**
+  * Handle post-validation form submission
+  * Handle form values in a cascade from more specific to less specific
+  */
+function ahah_demo_ahah_form_submit($form, $form_state) {
+  $class_group_id = $form_state['values']['search_content']['category_content']['model'];
+  if ($class_group_id && $class_group_id != 'none') {
+    drupal_goto('ahah_demo/model/'.$class_group_id);
+  }
+
+  $category_id = $form_state['values']['search_content']['category_content']['category'];
+  if ($category_id && $category_id != 'none') {
+    drupal_goto('ahah_demo/category/'.$category_id);
+  }
+
+  $department_id = $form_state['values']['search_content']['department'];
+  if ($department_id) {
+    drupal_goto('ahah_demo/department/'.$department_id);
+  }
+}
+
+/**
+  * Utility functions for populating select boxes
+  */
+function ahah_demo_get_departments() {
+  $departments = array();
+  $departments['none'] = t('Please select');
+
+  $departments['1'] = 'Compaction';
+  $departments['2'] = 'Concrete Masonry';
+  $departments['3'] = 'Earthmoving';
+  $departments['4'] = 'General Equipment';
+  $departments['5'] = 'Heaters';
+  /* Example of populating departments from the database
+  $query = db_query("SELECT nid, title FROM {node} WHERE type=\"eq_dept\"");
+  while ($dept = db_fetch_object($query)) {
+    $departments[$dept->nid] = $dept->title;
+  }
+  */
+
+  return $departments;
+}
+
+/**
+  * Function get equipment categores given an equipment department
+  * If $full is passed as TRUE, then all the categories in the
+  * department will be given, not just those with a class group
+  */
+function ahah_demo_get_categories($dept, $full = FALSE) {
+  $categories = array();
+  $categories['none'] = t('Please select');
+
+  switch($dept) {
+    case 1:
+      $categories[6] = 'Tamper';
+      $categories[7] = 'Trench Compactor';
+      $categories[8] = 'Reversible Plate Compactor';
+      break;
+    case 2:
+      $categories[9] = 'Concrete Bucket';
+      $categories[10] = 'Masonry Saws';
+      $categories[11] = 'Mortar Mixers';
+      break;
+    case 3:
+      $categories[12] = 'Backhoe Loaders';
+      $categories[13] = 'Excavators';
+      $categories[14] = 'Skid Steers';
+      break;
+    case 4:
+      $categories[15] = 'Chain Saws';
+      $categories[16] = 'Sanders';
+      $categories[17] = 'Wrenches';
+      break;
+    case 5:
+      $categories[18] = 'Electric Heaters';
+      $categories[19] = 'Kerosene Heaters';
+      $categories[20] = 'Propane Heaters';
+      break;
+  }
+  /** Example of getting categories from a database.
+    * The full variable determines if we want categories
+    * that don't have a third level to display for models
+    */
+  /*
+  if ($full) {
+    $query = db_query("
+      SELECT node.nid nid, node.title field_eq_cat_description_value FROM {node} node, {content_type_eq_cat} eq_cat
+      WHERE node.nid=eq_cat.nid AND eq_cat.field_eq_cat_dept_nid=".$dept
+    );
+  } else {
+    $query = db_query("
+      SELECT nid, field_eq_cat_description_value
+      FROM {content_type_eq_cat}
+      WHERE field_eq_cat_dept_nid =%d AND NID IN (
+        SELECT DISTINCT(field_cl_grp_category_nid)
+        FROM {content_type_class_group}
+        WHERE field_cl_grp_category_nid IS NOT NULL
+      )",
+    $dept);
+  }
+
+  while ($cat = db_fetch_object($query)) {
+    $categories[$cat->nid] = $cat->field_eq_cat_description_value;
+  }
+  */
+
+  return $categories;
+}
+
+function ahah_demo_get_models($cat) {
+  $models = array();
+  $models['none'] = t('Please select');
+
+  switch ($cat) {
+    case 6:
+      $models[19] = 'Tamper 2000';
+      $models[20] = 'Tamper 4000';
+      break;
+    case 7:
+      $models[21] = 'Trencher 2000';
+      $models[22] = 'Trencher 4000';
+      break;
+    case 8:
+      $models[23] = 'Plate 2000';
+      $models[24] = 'Plate 4000';
+      break;
+    case 9:
+      $models[25] = 'Bucket A';
+      $models[26] = 'Bucket B';
+      break;
+    case 10:
+      $models[27] = 'Saw 2000';
+      $models[28] = 'Saw 4000';
+      break;
+    case 11:
+      $models[29] = 'Mixer 2000';
+      $models[30] = 'Mixer 4000';
+      break;
+    case 12:
+      $models[31] = 'Bachkoe 2000';
+      $models[32] = 'Bachkoe 4000';
+      break;
+    case 13:
+      $models[33] = 'Excavator 2000';
+      $models[34] = 'Excavator 4000';
+      break;
+    case 14:
+      $models[35] = 'Skid Steer 2000';
+      $models[36] = 'Skid Steer 4000';
+      break;
+    case 15:
+      $models[37] = 'Chain Saw 2000';
+      $models[38] = 'Chain Saw 4000';
+      break;
+    case 16:
+      $models[39] = 'Sander 2000';
+      $models[40] = 'Sander 4000';
+      break;
+    case 17:
+      $models[41] = 'Wrench 2000';
+      $models[42] = 'Wrench 4000';
+      break;
+    case 18:
+      $models[43] = 'Electric 2000';
+      $models[44] = 'Electric 4000';
+      break;
+    case 19:
+      $models[43] = 'Kerosene 2000';
+      $models[44] = 'Kerosene 4000';
+      break;
+    case 20:
+      $models[43] = 'Propane 2000';
+      $models[44] = 'Propane 4000';
+      break;
+  }
+  /** Example of getting models from a database
+  $query = db_query("SELECT node.nid, node.title FROM {node} node, {content_type_class_group} cl_grp WHERE node.nid = cl_grp.nid AND field_cl_grp_category_nid = ". $cat);
+  while ($eq = db_fetch_array($query)) {
+    $models[$eq['nid']] = $eq['title'];
+  }
+  */
+
+  return $models;
+}
+
+/**
+  * Ensure that no model select appears by nulling its container  in the
+  * form storage bin.
+  */
+function ahah_demo_clear_model(&$form_state) {
+  $form_state['storage']['search_content']['category_content'] = NULL;
 }

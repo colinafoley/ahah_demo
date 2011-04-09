@@ -1,4 +1,4 @@
-name = AHAH Example For Developers
+name = AHAH Dropdowns
 description = A nice set of dropdowns dependent upon each other.
 package = Example modules
 core = 6.x
