@@ -1,0 +1,5 @@
+name = AHAH Example For Developers
+description = A nice set of dropdowns dependent upon each other.
+package = Example modules
+core = 6.x
+dependencies[] = ahah_helper
