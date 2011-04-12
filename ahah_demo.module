@@ -22,16 +22,7 @@ function ahah_demo_form($form_state) {
   //Register the form with ahah_helper
   ahah_helper_register($form, $form_state);
 
-  // Determine the default value of the 'department' select. When nothing is stored
-  // in $form_state['storage'] yet, the form hasn't been submitted yet,
-  // thus it's the first time the form is being displayed. Then, we set the
-  // default to 'none'.
-  if (!isset($form_state['storage']['search']['department'])) {
-    $department_value = 'none';
-  }
-  else {
-    $department_value =  $form_state['storage']['search']['department'];
-  }
+  $department_value = get_department_select_default_value($form_state);
 
   $form['search'] = array(
     '#tree' => TRUE,
@@ -43,7 +34,6 @@ function ahah_demo_form($form_state) {
   $form['search']['department'] = array(
     '#type' => 'select',
     '#title' => 'Select Department',
-    '#default_value' => $form_state['storage']['category']['select_cat'],
     '#options' => ahah_demo_get_departments(),  // Get some options for this select from the DB
     '#ahah' => array(
       'path' => ahah_helper_path(array('search')),
@@ -63,7 +53,6 @@ function ahah_demo_form($form_state) {
     // automatically by Drupal if JS is enabled.
     '#attributes' => array('class' => 'no-js'),
   );
-
 
   // Here we react to $form_state, adding content to the form, depending on the
   // submitted value of department, above.
@@ -114,6 +103,15 @@ function ahah_demo_form($form_state) {
   );
 
   return $form;
+}
+
+function get_department_select_default_value($form_state) {
+  if (!isset($form_state['storage']['search']['department'])) {
+    return 'none';
+  }
+  else {
+    return  $form_state['storage']['search']['department'];
+  }
 }
 
 /**
