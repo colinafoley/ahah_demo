@@ -18,15 +18,19 @@ function ahah_demo_form($form_state) {
   ahah_helper_register($form, $form_state);
 
   $department = get_department_from_select($form_state);
+  //$category = get_category_from_select($form_state);
 
   add_search_wrapper_to($form);
 
-  add_department_elements_to_form($department, $form);
+  add_department_select_to($form, $department);
+  add_department_update_button_for_no_js_to($form);
 
   if (we_have_department_info($department)) {
-    add_category_elements_to_form($department, $form, $form_state);
+    $category = get_category_from_select($form_state);
+    add_category_elements_to($form, $department, $category);
 
-    if (department_has_changed($form_state['storage']['dept_cache'], $department)) {
+    $stored_department = get_stored_department_from($form_state);
+    if (department_has_changed($stored_department, $department)) {
       ahah_demo_ensure_no_trailing_model_select($form_state);
     }
 
@@ -64,7 +68,7 @@ function add_search_wrapper_to(&$form) {
   );
 }
 
-function add_department_elements_to_form($department, &$form) {
+function add_department_select_to(&$form, $department) {
   $form['search']['department'] = array(
     '#type' => 'select',
     '#title' => 'Select Department',
@@ -76,6 +80,9 @@ function add_department_elements_to_form($department, &$form) {
     ),
     '#default_value' => $department,
   );
+}
+
+function add_department_update_button_for_no_js_to(&$form) {
   $form['search']['update_department'] = array(
     '#type'  => 'submit',
     '#value' => t('Update department'),
@@ -93,7 +100,11 @@ function we_have_department_info($department) {
   return $department != 'none';
 }
 
-function add_category_elements_to_form($department, &$form, $form_state) {
+function get_category_from_select($form_state) {
+  return $form_state['storage']['search']['category_wrapper']['category'];
+}
+
+function add_category_elements_to(&$form, $department, $category) {
   $form['search']['category_wrapper'] = array(
     '#type' => 'fieldset',
     '#tree' => TRUE,
@@ -110,8 +121,12 @@ function add_category_elements_to_form($department, &$form, $form_state) {
       'wrapper' => 'category-wrapper',
       'method' => 'replace',
     ),
-    '#default_value' => $form_state['storage']['search']['category_wrapper']['category'],
+    '#default_value' => $category,
   );
+}
+
+function get_stored_department_from($form_state) {
+  return $form_state['storage']['dept_cache'];
 }
 
 function department_has_changed($cached_value, $current_value) {
