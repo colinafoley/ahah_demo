@@ -34,7 +34,7 @@ function ahah_demo_form($form_state) {
   $form['search']['department'] = array(
     '#type' => 'select',
     '#title' => 'Select Department',
-    '#options' => ahah_demo_get_departments(),  // Get some options for this select from the DB
+    '#options' => ahah_demo_get_departments(),
     '#ahah' => array(
       'path' => ahah_helper_path(array('search')),
       'wrapper' => 'search-wrapper',
@@ -55,46 +55,20 @@ function ahah_demo_form($form_state) {
   );
 
   // Here we react to $form_state, adding content to the form, depending on the
-  // submitted value of department, above.
-  if($department_value != 'none') {
-    $form['search']['category_wrapper'] = array(
-      '#type' => 'fieldset',
-      '#tree' => TRUE,
-      '#title' => 'Search Category & Model',
-      '#prefix' => '<div id="category-wrapper">',
-      '#suffix' => '</div>',
-    );
-    $form['search']['category_wrapper']['category'] = array(
-      '#type' => 'select',
-      '#title' => 'Select Category',
-      '#options' => ahah_demo_get_categories($department_value),
-      '#ahah' => array(
-        'path' => ahah_helper_path(array('search', 'category_wrapper')),
-        'wrapper' => 'category-wrapper',
-        'method' => 'replace',
-      ),
-      '#default_value' => $form_state['storage']['search']['category_wrapper']['category'],
-    );
+  // submitted value of department above.
+  if (we_have_department_info($department_value)) {
+    add_category_elements_to_form($form, $form_state, $department_value);
 
-    //Check to see if the department value has changed.
-    //If it has, don't display the model.
-    if($form_state['storage']['dept_cache'] != $department_value) {
-      ahah_demo_clear_model($form_state);
+    if (department_value_has_changed($form_state['storage']['dept_cache'], $department_value)) {
+      ahah_demo_ensure_no_trailing_model_select($form_state);
     }
     $form_state['storage']['dept_cache'] = $department_value;
   } else {
-    ahah_demo_clear_model($form_state);
+    ahah_demo_ensure_no_trailing_model_select($form_state);
   }
 
-  if(isset($form_state['storage']['search']['category_wrapper']['category'])) {
-   if($form_state['storage']['search']['category_wrapper']['category'] != 'none') {
-      $form['search']['category_wrapper']['model'] = array(
-        '#type' => 'select',
-        '#title' => 'Select Model',
-        '#options' => ahah_demo_get_models($form_state['storage']['search']['category_wrapper']['category']),
-        '#default_value' => "default",
-      );
-    }
+  if(we_have_category_info($form_state)) {
+    add_model_element_to($form, $form_state);
   }
 
   $form['save'] = array(
@@ -103,6 +77,50 @@ function ahah_demo_form($form_state) {
   );
 
   return $form;
+}
+
+function we_have_department_info($department_value) {
+  return $department_value != 'none';
+}
+
+function add_category_elements_to_form(&$form, $form_state, $department_value) {
+  $form['search']['category_wrapper'] = array(
+    '#type' => 'fieldset',
+    '#tree' => TRUE,
+    '#title' => 'Search Category & Model',
+    '#prefix' => '<div id="category-wrapper">',
+    '#suffix' => '</div>',
+  );
+  $form['search']['category_wrapper']['category'] = array(
+    '#type' => 'select',
+    '#title' => 'Select Category',
+    '#options' => ahah_demo_get_categories($department_value),
+    '#ahah' => array(
+      'path' => ahah_helper_path(array('search', 'category_wrapper')),
+      'wrapper' => 'category-wrapper',
+      'method' => 'replace',
+    ),
+    '#default_value' => $form_state['storage']['search']['category_wrapper']['category'],
+  );
+}
+
+function department_value_has_changed($cached_value, $current_value) {
+  return $cached_value != $current_value;
+}
+
+function we_have_category_info($form_state) {
+  return
+    isset($form_state['storage']['search']['category_wrapper']['category']) &&
+    $form_state['storage']['search']['category_wrapper']['category'] != 'none';
+}
+
+function add_model_element_to(&$form, $form_state) {
+  $form['search']['category_wrapper']['model'] = array(
+    '#type' => 'select',
+    '#title' => 'Select Model',
+    '#options' => ahah_demo_get_models($form_state['storage']['search']['category_wrapper']['category']),
+    '#default_value' => "default",
+  );
 }
 
 function get_department_select_default_value($form_state) {
@@ -303,6 +321,6 @@ function ahah_demo_get_models($cat) {
   * Ensure that no model select appears by nulling its container  in the
   * form storage bin.
   */
-function ahah_demo_clear_model(&$form_state) {
+function ahah_demo_ensure_no_trailing_model_select(&$form_state) {
   $form_state['storage']['search']['category_wrapper'] = NULL;
 }
