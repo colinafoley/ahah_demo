@@ -292,19 +292,13 @@ function add_submit_button_to(&$form) {
   );
 }
 
-function ahah_demo_ahah_form_submit($form, $form_state) {
-  $class_group_id = $form_state['values']['search']['category_wrapper']['model'];
-  if ($class_group_id && $class_group_id != 'none') {
-    drupal_goto('ahah_demo/model/'.$class_group_id);
-  }
+function ahah_demo_form_submit($form, $form_state) {
+  $model_id = $form_state['values']['search']['category_wrapper']['model'];
+  drupal_set_message("Your model is: $model_id");
 
   $category_id = $form_state['values']['search']['category_wrapper']['category'];
-  if ($category_id && $category_id != 'none') {
-    drupal_goto('ahah_demo/category/'.$category_id);
-  }
+  drupal_set_message("Your category is: $category_id");
 
   $department_id = $form_state['values']['search']['department'];
-  if ($department_id) {
-    drupal_goto('ahah_demo/department/'.$department_id);
-  }
+  drupal_set_message("Your department is: $department_id");
 }
