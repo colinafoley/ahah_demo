@@ -114,6 +114,11 @@ function get_category_from_select($form_state) {
 }
 
 function add_category_elements_to(&$form, $department, $category) {
+  add_category_wrapper_to($form);
+  add_category_select_to($form, $department, $category);
+}
+
+function add_category_wrapper_to(&$form) {
   $form['search']['category_wrapper'] = array(
     '#type' => 'fieldset',
     '#tree' => TRUE,
@@ -121,6 +126,9 @@ function add_category_elements_to(&$form, $department, $category) {
     '#prefix' => '<div id="category-wrapper">',
     '#suffix' => '</div>',
   );
+}
+
+function add_category_select_to(&$form, $department, $category) {
   $form['search']['category_wrapper']['category'] = array(
     '#type' => 'select',
     '#title' => 'Select Category',
