@@ -87,12 +87,6 @@ function ahah_demo_get_departments() {
   $departments['3'] = 'Earthmoving';
   $departments['4'] = 'General Equipment';
   $departments['5'] = 'Heaters';
-  /* Example of populating departments from the database
-  $query = db_query("SELECT nid, title FROM {node} WHERE type=\"eq_dept\"");
-  while ($dept = db_fetch_object($query)) {
-    $departments[$dept->nid] = $dept->title;
-  }
-  */
 
   return $departments;
 }
@@ -144,12 +138,7 @@ function get_stored_department_from($form_state) {
   return $form_state['storage']['dept_cache'];
 }
 
-/**
-  * Function get equipment categores given an equipment department
-  * If $full is passed as TRUE, then all the categories in the
-  * department will be given, not just those with a class group
-  */
-function ahah_demo_get_categories($dept, $full = FALSE) {
+function ahah_demo_get_categories($dept) {
   $categories = array();
   $categories['none'] = t('Please select');
 
@@ -180,32 +169,6 @@ function ahah_demo_get_categories($dept, $full = FALSE) {
       $categories[20] = 'Propane Heaters';
       break;
   }
-  /** Example of getting categories from a database.
-    * The full variable determines if we want categories
-    * that don't have a third level to display for models
-    */
-  /*
-  if ($full) {
-    $query = db_query("
-      SELECT node.nid nid, node.title field_eq_cat_description_value FROM {node} node, {content_type_eq_cat} eq_cat
-      WHERE node.nid=eq_cat.nid AND eq_cat.field_eq_cat_dept_nid=".$dept
-    );
-  } else {
-    $query = db_query("
-      SELECT nid, field_eq_cat_description_value
-      FROM {content_type_eq_cat}
-      WHERE field_eq_cat_dept_nid =%d AND NID IN (
-        SELECT DISTINCT(field_cl_grp_category_nid)
-        FROM {content_type_class_group}
-        WHERE field_cl_grp_category_nid IS NOT NULL
-      )",
-    $dept);
-  }
-
-  while ($cat = db_fetch_object($query)) {
-    $categories[$cat->nid] = $cat->field_eq_cat_description_value;
-  }
-  */
 
   return $categories;
 }
@@ -310,12 +273,6 @@ function ahah_demo_get_models($cat) {
       $models[44] = 'Propane 4000';
       break;
   }
-  /** Example of getting models from a database
-  $query = db_query("SELECT node.nid, node.title FROM {node} node, {content_type_class_group} cl_grp WHERE node.nid = cl_grp.nid AND field_cl_grp_category_nid = ". $cat);
-  while ($eq = db_fetch_array($query)) {
-    $models[$eq['nid']] = $eq['title'];
-  }
-  */
 
   return $models;
 }
