@@ -25,7 +25,6 @@ function ahah_demo_form($form_state) {
   add_department_update_button_for_no_js_to($form);
 
   if (we_have_department_info($department)) {
-
     $category = get_category_from_select($form_state);
     add_category_elements_to($form, $department, $category);
 
@@ -38,7 +37,7 @@ function ahah_demo_form($form_state) {
     }
 
   } else {
-    ahah_demo_ensure_no_trailing_model_select($form_state);
+    ensure_no_trailing_model_select($form_state);
   }
 
   add_submit_button_to($form);
@@ -214,7 +213,7 @@ function ahah_demo_get_categories($dept, $full = FALSE) {
 function run_checks_on($department, &$form_state) {
   $stored_department = get_stored_department_from($form_state);
   if (department_has_changed($stored_department, $department)) {
-    ahah_demo_ensure_no_trailing_model_select($form_state);
+    ensure_no_trailing_model_select($form_state);
   }
 }
 
@@ -222,7 +221,7 @@ function department_has_changed($stored_value, $current_value) {
   return $stored_value != $current_value;
 }
 
-function ahah_demo_ensure_no_trailing_model_select(&$form_state) {
+function ensure_no_trailing_model_select(&$form_state) {
   $form_state['storage']['search']['category_wrapper'] = NULL;
 }
 
